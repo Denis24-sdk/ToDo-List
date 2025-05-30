@@ -1,47 +1,412 @@
-/* App.css - Dark Theme */
+@import url("https://fonts.googleapis.com/css2?family=Inter&display=swap");
 
-.app {
-  width: 100%;
-  max-width: 700px;
-  background-color: #212121;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9);
-  padding: 2rem 3rem;
+:root {
+  --bg: #fefefe;
+  --fg: #222;
+  --primary: #0d6efd;
+  --low-priority: #6c757d;
+  --medium-priority: #0d6efd;
+  --high-priority: #dc3545;
+  --border: #ddd;
+  --btn-bg: #0d6efd;
+  --btn-fg: #fff;
+  --btn-hover-bg: #084298;
+  --input-bg: #fff;
+  --input-fg: #222;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+.dark {
+  --bg: #121212;
+  --fg: #eee;
+  --primary: #3399ff;
+  --low-priority: #adb5bd;
+  --medium-priority: #3399ff;
+  --high-priority: #ff6b6b;
+  --border: #444;
+  --btn-bg: #3399ff;
+  --btn-fg: #fff;
+  --btn-hover-bg: #1a73e8;
+  --input-bg: #222;
+  --input-fg: #eee;
+  --shadow: rgba(0, 0, 0, 0.7);
+}
+
+* {
   box-sizing: border-box;
-  color: #e0e0e0;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+    sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
+}
+
+.app-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: var(--input-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow);
+  padding: 1.5rem 2rem;
+  user-select: text;
+}
+
+.header {
   display: flex;
-  flex-direction: column;
-  min-height: 80vh;
-  transition: background-color 0.3s ease;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.app h1 {
-  margin: 0 0 1.5rem 0;
+.header h1 {
   font-weight: 700;
-  font-size: 2.5rem;
-  color: #90caf9;
-  user-select: text;
-  text-align: center;
-}
-
-.app-footer {
-  margin-top: auto;
-  font-size: 14px;
-  color: #78909c;
-  text-align: center;
+  font-size: 2rem;
+  margin: 0;
   user-select: text;
 }
 
-/* Links in footer */
-.app-footer a {
-  color: #64b5f6;
-  text-decoration: none;
+.theme-toggle {
+  font-size: 1.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary);
+  transition: color 0.3s ease;
+  user-select: none;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus {
+  color: var(--btn-hover-bg);
+  outline: none;
+}
+
+.add-task {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.add-task input[type="text"] {
+  flex-grow: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  transition: border-color 0.3s ease;
+  user-select: text;
+}
+
+.add-task input[type="text"]:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.add-task select {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  transition: border-color 0.3s ease;
+  user-select: text;
+}
+
+.add-task select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.add-task button {
+  background-color: var(--btn-bg);
+  color: var(--btn-fg);
+  border: none;
+  padding: 0 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+  user-select: none;
+}
+
+.add-task button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-task button:hover:not(:disabled),
+.add-task button:focus:not(:disabled) {
+  background-color: var(--btn-hover-bg);
+  outline: none;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-sort {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter,
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.filter label,
+.sort label {
+  user-select: none;
+}
+
+.filter select,
+.sort select {
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  font-weight: 400;
+  transition: border-color 0.3s ease;
+  user-select: text;
+}
+
+.filter select:focus,
+.sort select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.reset-filter,
+.sort-direction {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--primary);
+  user-select: none;
+  padding: 0 0.25rem;
   transition: color 0.3s ease;
 }
 
-.app-footer a:hover {
-  color: #90caf9;
+.reset-filter:hover,
+.sort-direction:hover,
+.reset-filter:focus,
+.sort-direction:focus {
+  color: var(--btn-hover-bg);
+  outline: none;
+}
+
+.clear-btn {
+  background: none;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear-btn:not(:disabled):hover,
+.clear-btn:not(:disabled):focus {
+  background-color: var(--primary);
+  color: var(--btn-fg);
+  outline: none;
+}
+
+.counts {
+  font-weight: 600;
+  margin-bottom: 1rem;
+  user-select: none;
+}
+
+.undo {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.undo button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  user-select: none;
+  transition: text-decoration 0.3s ease;
+}
+
+.undo button:hover,
+.undo button:focus {
   text-decoration: underline;
+  outline: none;
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  user-select: none;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  background-color: var(--input-bg);
+  border: 1.5px solid var(--border);
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.2s ease,
+    border-color 0.3s ease;
+  cursor: grab;
+}
+
+.task-item:last-child {
+  margin-bottom: 0;
+}
+
+.task-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+  box-shadow: 0 8px 16px var(--shadow);
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--btn-fg);
+  user-select: none;
+}
+
+.task-item.drag-over {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
+}
+
+.task-item.completed .task-text {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.task-text {
+  flex-grow: 1;
+  outline: none;
+  padding-left: 0.5rem;
+  border-left: 4px solid transparent;
+  user-select: text;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.task-text:focus {
+  outline: 2px solid var(--primary);
+  border-radius: 6px;
+}
+
+input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.delete-btn {
+  font-size: 1.2rem;
+  color: #dc3545;
+  background: none;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 0;
+  transition: color 0.3s ease;
+}
+
+.delete-btn:hover,
+.delete-btn:focus {
+  color: #ff6b6b;
+  outline: none;
+}
+
+.edit-input {
+  flex-grow: 1;
+  padding: 0.4rem 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  margin-right: 0.5rem;
+  transition: border-color 0.3s ease;
+  user-select: text;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0 0.3rem;
+  user-select: none;
+  transition: color 0.3s ease;
+}
+
+.icon-button:hover,
+.icon-button:focus {
+  color: var(--btn-hover-bg);
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .add-task {
+    flex-direction: column;
+  }
+  .filter-sort {
+    flex-direction: column;
+  }
+  .controls {
+    justify-content: center;
+  }
 }
 
