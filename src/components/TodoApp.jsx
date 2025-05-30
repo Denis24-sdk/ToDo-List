@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import './ToDoApp.css';
 
 const PRIORITY_COLORS = {
