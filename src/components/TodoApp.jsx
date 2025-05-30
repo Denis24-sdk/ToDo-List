@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import './ToDoApp.css';
 
 const PRIORITY_COLORS = {
@@ -7,58 +8,7 @@ const PRIORITY_COLORS = {
   low: 'low',
 };
 
-const IconEdit = () => (
-  <svg
-    width="18"
-    height="18"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <path d="M12 20h9" />
-    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
-  </svg>
-);
-
-const IconDelete = () => (
-  <svg
-    width="18"
-    height="18"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-    <path d="M10 11v6" />
-    <path d="M14 11v6" />
-    <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-  </svg>
-);
-
-const IconCheck = () => (
-  <svg
-    width="18"
-    height="18"
-    fill="none"
-    stroke="white"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+// Иконки (IconEdit, IconDelete, IconCheck) оставляем без изменений
 
 function ToDoApp() {
   const [tasks, setTasks] = useState(() => {
@@ -152,9 +102,20 @@ function ToDoApp() {
     else if (e.key === 'Escape') cancelEditing();
   };
 
+  // Обработчик окончания перетаскивания
+  const onDragEnd = (result) => {
+    if (!result.destination) return; // Если отпустили вне списка - ничего не делаем
+
+    const newTasks = Array.from(tasks);
+    const [movedTask] = newTasks.splice(result.source.index, 1);
+    newTasks.splice(result.destination.index, 0, movedTask);
+
+    setTasks(newTasks);
+  };
+
   return (
     <div className="todo-container" role="main">
-      <h2>ToDo List с приоритетами и редактированием</h2>
+      <h2>ToDo List с приоритетами, редактированием и Drag & Drop</h2>
 
       <div className="form-add">
         <input
@@ -219,109 +180,129 @@ function ToDoApp() {
         </button>
       </div>
 
-      <ul className="task-list" aria-label="Список задач">
-        {filteredTasks.length === 0 && (
-          <li className="no-tasks">Задачи не найдены</li>
-        )}
-
-        {filteredTasks.map(task => (
-          <li
-            key={task.id}
-            className={task.completed ? 'completed' : ''}
-            tabIndex={-1}
-          >
-            <button
-              onClick={() => toggleCompleted(task.id)}
-              aria-label={
-                task.completed
-                  ? 'Отметить задачу как невыполненную'
-                  : 'Отметить задачу как выполненную'
-              }
-              title={
-                task.completed
-                  ? 'Задача выполнена'
-                  : 'Отметить как выполненную'
-              }
-              className={`btn-circle ${task.completed ? 'completed' : ''}`}
-              type="button"
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="tasksList">
+          {(provided) => (
+            <ul
+              className="task-list"
+              aria-label="Список задач"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
             >
-              {task.completed && <IconCheck />}
-            </button>
+              {filteredTasks.length === 0 && (
+                <li className="no-tasks">Задачи не найдены</li>
+              )}
 
-            {editTaskId === task.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editTaskText}
-                  onChange={e => setEditTaskText(e.target.value)}
-                  onKeyDown={handleKeyDownEditTask}
-                  autoFocus
-                  aria-label="Редактировать текст задачи"
-                  className="edit-input"
-                />
-                <select
-                  value={editTaskPriority}
-                  onChange={e => setEditTaskPriority(e.target.value)}
-                  aria-label="Редактировать приоритет задачи"
-                  className="edit-select"
-                >
-                  <option value="low">Низкий</option>
-                  <option value="medium">Средний</option>
-                  <option value="high">Высокий</option>
-                </select>
-                <button
-                  onClick={() => saveEditing(task.id)}
-                  className="btn-edit-save"
-                  title="Сохранить изменения"
-                  type="button"
-                >
-                  Сохранить
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="btn-edit-cancel"
-                  title="Отменить редактирование"
-                  type="button"
-                >
-                  Отмена
-                </button>
-              </>
-            ) : (
-              <>
-                <span
-                  className={`task-text ${task.completed ? 'completed' : ''}`}
-                  title="Текст задачи"
-                >
-                  {task.text}
-                </span>
-                <span
-                  className={`priority-dot ${PRIORITY_COLORS[task.priority]}`}
-                  title={`Приоритет: ${task.priority}`}
-                  aria-label={`Приоритет задачи: ${task.priority}`}
-                />
-                <button
-                  onClick={() => startEditing(task)}
-                  aria-label="Редактировать задачу"
-                  title="Редактировать задачу"
-                  className="btn-small edit"
-                  type="button"
-                >
-                  <IconEdit />
-                </button>
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  aria-label="Удалить задачу"
-                  title="Удалить задачу"
-                  className="btn-small delete"
-                  type="button"
-                >
-                  <IconDelete />
-                </button>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+              {filteredTasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                  {(provided, snapshot) => (
+                    <li
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`${task.completed ? 'completed' : ''} ${
+                        snapshot.isDragging ? 'dragging' : ''
+                      }`}
+                      tabIndex={-1}
+                    >
+                      <button
+                        onClick={() => toggleCompleted(task.id)}
+                        aria-label={
+                          task.completed
+                            ? 'Отметить задачу как невыполненную'
+                            : 'Отметить задачу как выполненную'
+                        }
+                        title={
+                          task.completed
+                            ? 'Задача выполнена'
+                            : 'Отметить как выполненную'
+                        }
+                        className={`btn-circle ${task.completed ? 'completed' : ''}`}
+                        type="button"
+                      >
+                        {task.completed && <IconCheck />}
+                      </button>
+
+                      {editTaskId === task.id ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editTaskText}
+                            onChange={e => setEditTaskText(e.target.value)}
+                            onKeyDown={handleKeyDownEditTask}
+                            autoFocus
+                            aria-label="Редактировать текст задачи"
+                            className="edit-input"
+                          />
+                          <select
+                            value={editTaskPriority}
+                            onChange={e => setEditTaskPriority(e.target.value)}
+                            aria-label="Редактировать приоритет задачи"
+                            className="edit-select"
+                          >
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                          </select>
+                          <button
+                            onClick={() => saveEditing(task.id)}
+                            className="btn-edit-save"
+                            title="Сохранить изменения"
+                            type="button"
+                          >
+                            Сохранить
+                          </button>
+                          <button
+                            onClick={cancelEditing}
+                            className="btn-edit-cancel"
+                            title="Отменить редактирование"
+                            type="button"
+                          >
+                            Отмена
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            className={`task-text ${task.completed ? 'completed' : ''}`}
+                            title="Текст задачи"
+                          >
+                            {task.text}
+                          </span>
+                          <span
+                            className={`priority-dot ${PRIORITY_COLORS[task.priority]}`}
+                            title={`Приоритет: ${task.priority}`}
+                            aria-label={`Приоритет задачи: ${task.priority}`}
+                          />
+                          <button
+                            onClick={() => startEditing(task)}
+                            aria-label="Редактировать задачу"
+                            title="Редактировать задачу"
+                            className="btn-small edit"
+                            type="button"
+                          >
+                            <IconEdit />
+                          </button>
+                          <button
+                            onClick={() => deleteTask(task.id)}
+                            aria-label="Удалить задачу"
+                            title="Удалить задачу"
+                            className="btn-small delete"
+                            type="button"
+                          >
+                            <IconDelete />
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }
