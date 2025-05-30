@@ -410,3 +410,89 @@ input[type="checkbox"] {
   }
 }
 
+
+
+.lists-nav {
+  display: flex;
+  flex-wrap: wrap;       /* перенос строк */
+  gap: 0.6rem 0.8rem;    /* вертикальный и горизонтальный отступ */
+  margin-bottom: 1.5rem; /* отступ снизу */
+  user-select: none;
+  /* убираем overflow-x: auto; чтобы не было скролла */
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+
+
+.list-tab {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  background-color: var(--input-bg);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  user-select: none;
+}
+
+.list-tab.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--btn-fg);
+  font-weight: 700;
+}
+
+.list-tab:hover,
+.list-tab:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.list-name {
+  user-select: text;
+}
+
+.list-rename-input {
+  font-size: 1rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--input-fg);
+  user-select: text;
+  width: 120px;
+  transition: border-color 0.3s ease;
+}
+
+.list-rename-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.add-list-btn {
+  font-size: 1.3rem; /* чуть меньше, чтобы плюс ровный */
+  line-height: 1;
+  background: none;
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.add-list-btn:hover,
+.add-list-btn:focus {
+  background-color: var(--primary);
+  color: var(--btn-fg);
+  outline: none;
+}

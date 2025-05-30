@@ -139,11 +139,129 @@ function TodoItem({
   );
 }
 
+function ListTab({ list, isActive, selectList, renameList, deleteList, disableDelete }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(list.name);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) inputRef.current.focus();
+  }, [isEditing]);
+
+  const saveName = () => {
+    const trimmed = name.trim();
+    if (trimmed.length === 0) {
+      setName(list.name);
+      setIsEditing(false);
+      return;
+    }
+    renameList(list.id, trimmed);
+    setIsEditing(false);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "Enter") saveName();
+    if (e.key === "Escape") {
+      setName(list.name);
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div
+      className={`list-tab${isActive ? " active" : ""}`}
+      role="tab"
+      aria-selected={isActive}
+      tabIndex={isActive ? 0 : -1}
+      onClick={() => selectList(list.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") selectList(list.id);
+      }}
+    >
+      {isEditing ? (
+        <>
+          <input
+            ref={inputRef}
+            className="list-rename-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={saveName}
+            aria-label="Переименовать список задач"
+          />
+          <button
+            onClick={() => {
+              setName(list.name);
+              setIsEditing(false);
+            }}
+            aria-label="Отменить переименование списка"
+            className="icon-button"
+            title="Отменить"
+            type="button"
+          >
+            ✖️
+          </button>
+        </>
+      ) : (
+        <>
+          <span
+            className="list-name"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            tabIndex={-1}
+            aria-label={`Список: ${list.name}. Двойной клик для переименования.`}
+          >
+            {list.name}
+          </span>
+          {!disableDelete && (
+            <button
+              className="icon-button delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (
+                  window.confirm(
+                    `Удалить список "${list.name}" и все его задачи?`
+                  )
+                ) {
+                  deleteList(list.id);
+                }
+              }}
+              aria-label={`Удалить список "${list.name}"`}
+              title="Удалить список"
+              type="button"
+            >
+              🗑️
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem("tasks");
-    return saved ? JSON.parse(saved) : [];
+  // Списки: {id, name, tasks: []}
+  const [lists, setLists] = useState(() => {
+    const saved = localStorage.getItem("todoLists");
+    if (saved) return JSON.parse(saved);
+    // Изначально один список "Основной"
+    return [
+      {
+        id: Date.now(),
+        name: "Основной",
+        tasks: [],
+      },
+    ];
   });
+
+  const [activeListId, setActiveListId] = useState(() => {
+    const saved = localStorage.getItem("activeListId");
+    if (saved) return JSON.parse(saved);
+    return lists[0].id;
+  });
+
   const [filter, setFilter] = useState("all"); // all, active, completed
   const [sortBy, setSortBy] = useState("priority"); // priority, date
   const [sortAsc, setSortAsc] = useState(false);
@@ -154,9 +272,14 @@ export default function App() {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
 
+  // Сохраняем списки и активный список в localStorage
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    localStorage.setItem("todoLists", JSON.stringify(lists));
+  }, [lists]);
+
+  useEffect(() => {
+    localStorage.setItem("activeListId", JSON.stringify(activeListId));
+  }, [activeListId]);
 
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode);
@@ -164,6 +287,13 @@ export default function App() {
     else document.documentElement.classList.remove("dark");
   }, [darkMode]);
 
+  // Получаем активный список
+  const activeList = lists.find((l) => l.id === activeListId) || lists[0];
+
+  // Задачи активного списка
+  const tasks = activeList.tasks;
+
+  // Добавление задачи в активный список
   const addTask = () => {
     const trimmed = inputText.trim();
     if (!trimmed) return;
@@ -173,50 +303,93 @@ export default function App() {
       completed: false,
       priority: inputPriority,
     };
-    setTasks((prev) => [newTask, ...prev]);
+    const newLists = lists.map((l) =>
+      l.id === activeListId ? { ...l, tasks: [newTask, ...l.tasks] } : l
+    );
+    setLists(newLists);
     setInputText("");
     setInputPriority("medium");
   };
 
+  // Переключение состояния задачи
   const toggleComplete = (id) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
-  };
-
-  const deleteTodo = (id) => {
-    setTasks((prev) => {
-      const deleted = prev.find((t) => t.id === id);
-      setLastDeleted(deleted);
-      return prev.filter((t) => t.id !== id);
+    const newLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        return {
+          ...l,
+          tasks: l.tasks.map((t) =>
+            t.id === id ? { ...t, completed: !t.completed } : t
+          ),
+        };
+      }
+      return l;
     });
+    setLists(newLists);
   };
 
+  // Удаление задачи с запоминанием для undo
+  const deleteTodo = (id) => {
+    let deletedTask = null;
+    const newLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        deletedTask = l.tasks.find((t) => t.id === id);
+        return { ...l, tasks: l.tasks.filter((t) => t.id !== id) };
+      }
+      return l;
+    });
+    setLists(newLists);
+    if (deletedTask) setLastDeleted({ ...deletedTask, listId: activeListId });
+  };
+
+  // Отмена удаления
   const undoDelete = () => {
     if (lastDeleted) {
-      setTasks((prev) => [lastDeleted, ...prev]);
+      const newLists = lists.map((l) => {
+        if (l.id === lastDeleted.listId) {
+          return { ...l, tasks: [lastDeleted, ...l.tasks] };
+        }
+        return l;
+      });
+      setLists(newLists);
       setLastDeleted(null);
     }
   };
 
+  // Редактирование задачи
   const editTodo = (id, newText, newPriority) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, text: newText, priority: newPriority } : t
-      )
-    );
+    const newLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        return {
+          ...l,
+          tasks: l.tasks.map((t) =>
+            t.id === id ? { ...t, text: newText, priority: newPriority } : t
+          ),
+        };
+      }
+      return l;
+    });
+    setLists(newLists);
   };
 
+  // Очистка выполненных задач
   const clearCompleted = () => {
-    setTasks((prev) => prev.filter((t) => !t.completed));
+    const newLists = lists.map((l) => {
+      if (l.id === activeListId) {
+        return { ...l, tasks: l.tasks.filter((t) => !t.completed) };
+      }
+      return l;
+    });
+    setLists(newLists);
   };
 
+  // Фильтрация задач
   const filteredTasks = tasks.filter((t) => {
     if (filter === "active") return !t.completed;
     if (filter === "completed") return t.completed;
     return true;
   });
 
+  // Сортировка задач
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     if (sortBy === "priority") {
       const order = (p) => PRIORITIES.findIndex((x) => x.key === p);
@@ -230,7 +403,7 @@ export default function App() {
     return 0;
   });
 
-  // Drag and drop handlers
+  // Drag and drop для задач
   const onDragStart = (e, id) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = "move";
@@ -259,9 +432,8 @@ export default function App() {
     const [moved] = newTasksOrder.splice(draggedIndex, 1);
     newTasksOrder.splice(dropIndex, 0, moved);
 
-    // Обновляем порядок в исходном массиве tasks
-    const filteredIds = sortedTasks.map((t) => t.id);
-    const restTasks = tasks.filter((t) => !filteredIds.includes(t.id));
+    // Обновляем порядок в активном списке
+    const restTasks = tasks.filter((t) => !sortedTasks.some((st) => st.id === t.id));
     const reorderedTasks = [];
 
     for (let tid of newTasksOrder.map((t) => t.id)) {
@@ -269,7 +441,11 @@ export default function App() {
       if (task) reorderedTasks.push(task);
     }
     reorderedTasks.push(...restTasks);
-    setTasks(reorderedTasks);
+
+    const newLists = lists.map((l) =>
+      l.id === activeListId ? { ...l, tasks: reorderedTasks } : l
+    );
+    setLists(newLists);
 
     setDraggedId(null);
     setDragOverId(null);
@@ -277,6 +453,42 @@ export default function App() {
   const onDragEnd = () => {
     setDraggedId(null);
     setDragOverId(null);
+  };
+
+  // Создать новый список
+  const addList = () => {
+    const name = prompt("Введите название нового списка задач:", "Новый список");
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const newList = {
+      id: Date.now(),
+      name: trimmed,
+      tasks: [],
+    };
+    setLists((prev) => [...prev, newList]);
+    setActiveListId(newList.id);
+  };
+
+  // Переименовать список
+  const renameList = (id, newName) => {
+    setLists((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, name: newName } : l))
+    );
+  };
+
+  // Удалить список (если не единственный)
+  const deleteList = (id) => {
+    if (lists.length === 1) {
+      alert("Нельзя удалить последний список.");
+      return;
+    }
+    setLists((prev) => prev.filter((l) => l.id !== id));
+    if (activeListId === id) {
+      // Переключаемся на первый в списке
+      const remaining = lists.filter((l) => l.id !== id);
+      if (remaining.length > 0) setActiveListId(remaining[0].id);
+    }
   };
 
   const countActive = tasks.filter((t) => !t.completed).length;
@@ -296,7 +508,29 @@ export default function App() {
         </button>
       </header>
 
-      <section className="add-task" aria-label="Добавить задачу">
+      <nav className="lists-nav" role="tablist" aria-label="Списки задач">
+        {lists.map((list) => (
+          <ListTab
+            key={list.id}
+            list={list}
+            isActive={list.id === activeListId}
+            selectList={setActiveListId}
+            renameList={renameList}
+            deleteList={deleteList}
+            disableDelete={lists.length === 1}
+          />
+        ))}
+        <button
+          className="add-list-btn"
+          onClick={addList}
+          aria-label="Добавить новый список задач"
+          title="Добавить список"
+        >
+          ＋
+        </button>
+      </nav>
+
+      <section className="add-task" aria-label={`Добавить задачу в список "${activeList.name}"`}>
         <input
           type="text"
           placeholder="Новая задача"
@@ -382,7 +616,7 @@ export default function App() {
       </section>
 
       <section className="counts" aria-live="polite" aria-atomic="true">
-        Всего: {tasks.length}, Активных: {countActive}, Выполненных: {countCompleted}
+        Список: <strong>{activeList.name}</strong> — Всего: {tasks.length}, Активных: {countActive}, Выполненных: {countCompleted}
       </section>
 
       {lastDeleted && (
@@ -394,7 +628,7 @@ export default function App() {
         </section>
       )}
 
-      <ul className="task-list" aria-label="Список задач">
+      <ul className="task-list" aria-label={`Задачи списка "${activeList.name}"`}>
         {sortedTasks.map((task) => (
           <TodoItem
             key={task.id}
